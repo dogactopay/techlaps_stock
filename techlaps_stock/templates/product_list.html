@@ -1,0 +1,47 @@
+{% load static %}
+{{ can_show_distribute }}
+
+<style></style>
+<!DOCTYPE html>
+<html>
+
+<link rel="stylesheet" type="text/css" href=" {% static '/table.css' %} ">
+
+
+<body>
+
+    {% block content %}
+    <center>
+        <h1>Siparişler</h1>
+{{test}}
+
+        <table>
+            <tr>
+                <th>Ürün Adı</th>
+                <th>Stok</th>
+                <th></th>
+            </tr>
+            {% for order in orders %}
+
+
+
+            <tr>
+                <td>{{order.user.first_name}} {{order.user.last_name}}</td>
+                <td>1</td>
+                <td> <button type="submit">Ekle</button>
+                </td>
+            </tr>
+            {% endfor %}
+
+
+
+        </table>
+
+
+
+    </center>
+    {% endblock %}
+
+</body>
+
+</html>
