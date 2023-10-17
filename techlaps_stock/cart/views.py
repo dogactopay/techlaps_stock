@@ -9,17 +9,58 @@ from rest_framework.permissions import IsAuthenticated
 # Create your views here.
 from rest_framework.decorators import action
 from django.views import generic
+from django.contrib.auth.models import User
 
 
-class BookListView(generic.ListView):
-    model = Order
-    context_object_name = 'orders'   # your own name for the list as a template variable
-    template_name = 'product_list.html'  # Specify your own template name/location
+class OrderViewSet(viewsets.ViewSet):
+    # permission_classes = IsAuthenticated
 
-    def get_context_data(self, **kwargs):
-        context = super(BookListView, self).get_context_data(**kwargs)
-        context['test'] = 123
-        return context
+    def list(self, request):
+        user_id = request.user.id
+        if user_id:
+            query = User.objects.filter(id=user_id).values_list(
+                "is_staff", flat=True)[0]
+
+            print(query)
+            if query:
+                queryset = Order.objects.all().order_by('status','-created')
+            else:
+                queryset = Order.objects.filter(user=user_id).order_by('status','-created')
+        else:
+            queryset = Order.objects.all().order_by('status','-created')
+        serializer = OrderSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        serializer = OrderSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def destroy(self, request, pk, format=None):
+        snippet = Order.objects.get(pk=pk)
+        snippet.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def partial_update(self, request, pk=None):
+
+        old_st = Order.objects.filter(id=request.data['id']).values_list(
+            "status", flat=True)[0]
+
+        if old_st != 1 and request.data['status'] == 1:
+            for p in request.data['content']:
+                stck = Product.objects.filter(id=p['id']).values_list(
+                    "stock_qty", flat=True)[0]
+                Product.objects.filter(id=p['id']).update(
+                    stock_qty=stck-p['quantity'])
+
+        job = Order.objects.get(pk=pk)
+        print(request.data)
+        serializer = OrderChangeSerializer(job, request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(request.data)
 
 
 class ProductViewSet(viewsets.ViewSet):

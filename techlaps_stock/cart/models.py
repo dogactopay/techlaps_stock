@@ -7,11 +7,11 @@ class Product(models.Model):
     created = models.DateTimeField(auto_now_add=True)
 
     id = models.AutoField(primary_key=True)
-    sku = models.IntegerField(default=0)
+    sku = models.IntegerField(default=0, blank=True)
 
-    title = models.CharField(max_length=500)
-    description = models.CharField(max_length=500)
-    title = models.CharField(max_length=500)
+    title = models.CharField(max_length=500, blank=True)
+    image = models.CharField(max_length=2000, blank=True)
+    description = models.CharField(max_length=500, blank=True)
     stock_qty = models.IntegerField(default=0)
     price = models.IntegerField(default=0)
 
@@ -32,7 +32,8 @@ class Order(models.Model):
     )
     id = models.AutoField(primary_key=True)
 
-    content = models.TextField()
+    content = models.JSONField(blank=True)
+    status = models.IntegerField(default=0)
 
     def __str__(self):
         return str(self.id)

@@ -20,6 +20,7 @@ class TokenSerializer(TokenObtainSerializer):
         data.update({'id': self.user.id})
         data.update({'first_name': self.user.first_name})
         data.update({'last_name': self.user.last_name})
+        data.update({'is_staff': self.user.is_staff})
         data.update({'email': self.user.email})
         data.update({'token': token.key})
         # data.update({'created': created})
