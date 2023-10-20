@@ -23,11 +23,12 @@ class OrderViewSet(viewsets.ViewSet):
 
             print(query)
             if query:
-                queryset = Order.objects.all().order_by('status','-created')
+                queryset = Order.objects.all().order_by('status', '-created')
             else:
-                queryset = Order.objects.filter(user=user_id).order_by('status','-created')
+                queryset = Order.objects.filter(
+                    user=user_id).order_by('status', '-created')
         else:
-            queryset = Order.objects.all().order_by('status','-created')
+            queryset = Order.objects.all().order_by('status', '-created')
         serializer = OrderSerializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -54,6 +55,9 @@ class OrderViewSet(viewsets.ViewSet):
                 Product.objects.filter(id=p['id']).update(
                     stock_qty=stck-p['quantity'])
 
+                StockMove.objects.create(user=User.objects.get(
+                    pk=1), product=Product.objects.get(pk=p['id']), move=f"-{p['quantity']}")
+
         job = Order.objects.get(pk=pk)
         print(request.data)
         serializer = OrderChangeSerializer(job, request.data, partial=True)
@@ -76,6 +80,10 @@ class ProductViewSet(viewsets.ViewSet):
         serializer = ProductSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+
+        StockMove.objects.create(
+            user=User.objects.get(pk=1), product=Product.objects.get(pk=serializer.data['id']), move=f"+{serializer.data['stock_qty']}")
+
         return Response(serializer.data)
 
     def destroy(self, request, pk, format=None):
@@ -86,6 +94,20 @@ class ProductViewSet(viewsets.ViewSet):
     def partial_update(self, request, pk=None):
 
         job = Product.objects.get(pk=pk)
+
+        diff = int(request.data['stock_qty']) - \
+            list(Product.objects.filter(id=pk).values_list(
+                "stock_qty", flat=True))[0]
+
+        print(int(request.data['stock_qty']))
+        print(diff)
+        if "-" in str(diff):
+            move1 = diff
+        else:
+            move1 = f"+{diff}"
+        StockMove.objects.create(
+            user=User.objects.get(pk=1), product=Product.objects.get(pk=pk), move=move1)
+
         serializer = ProductSerializer(job, request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -100,3 +122,33 @@ class ProductViewSet(viewsets.ViewSet):
             user=User.objects.get(pk=request.data["user"]), content=request.data["order"])
         print(request.data)
         return Response(request.data)
+
+
+class StockMoveViewSet(viewsets.ViewSet):
+    # permission_classes = IsAuthenticated
+
+    def list(self, request):
+        queryset = StockMove.objects.all()
+
+        serializer = StockMoveSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        serializer = StockMoveSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def destroy(self, request, pk, format=None):
+        snippet = StockMove.objects.get(pk=pk)
+        snippet.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def partial_update(self, request, pk=None):
+
+        job = StockMove.objects.get(pk=pk)
+        serializer = StockMoveSerializer(job, request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data)

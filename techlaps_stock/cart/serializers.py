@@ -12,6 +12,16 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class StockMoveSerializer(serializers.ModelSerializer):
+    product = serializers.CharField(
+        source="product.title"
+    )
+
+    class Meta:
+        model = StockMove
+
+        fields = ["product",'move','created']
+
 
 class OrderSerializer(serializers.ModelSerializer):
 
